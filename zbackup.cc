@@ -185,12 +185,14 @@ invalid_option:
 "            is fast)\n"
 "    gc [fast|deep] <storage path> - performs garbage\n"
 "            collection (default is fast)\n"
+"    test   <storage path> - integrity checking\n"
 "    passwd <storage path> - changes repo info file passphrase\n"
 "    config [show|edit|set|reset] <storage path> - performs\n"
 "            configuration manipulations (default is show)\n"
 "", zbackup_version.c_str(), *argv );
       return EXIT_FAILURE;
     }
+
 
     if ( passwords.size() > 1 &&
         ( ( passwords[ 0 ].empty() && !passwords[ 1 ].empty() ) ||
@@ -219,7 +221,23 @@ invalid_option:
       }
 
       ZBackup::initStorage( args[ 1 ],
-          passwords[ 0 ], !passwords[ 0 ].empty(), config );
+          passwords[ 0 ], !passwords[ 0 ].empty(), config );    
+    }
+    else
+    if ( strcmp( args[ 0 ], "test" ) == 0 )
+    {
+      // Perform testing
+      if ( args.size() < 2 || args.size() > 2 )
+      {
+        fprintf( stderr, "Usage: %s %s <storage path>\n",
+                 *argv, args[ 0 ] );
+        return EXIT_FAILURE;
+      }
+
+      ZCollector zc( ZBackupBase::deriveStorageDirFromBackupsFile( args[ 1 ], true ),
+            passwords[ 0 ], config );
+      BundleCollector* c = zc.test( true );
+      delete c;
     }
     else
     if ( strcmp( args[ 0 ], "backup" ) == 0 )

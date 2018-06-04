@@ -6,6 +6,7 @@
 
 #include "chunk_storage.hh"
 #include "zbackup_base.hh"
+#include "backup_collector.hh"
 
 class ZBackup: public ZBackupBase
 {
@@ -75,6 +76,8 @@ public:
               Config & configIn );
 
   void gc( bool );
+
+  BundleCollector* test( bool );
 };
 
 class ZInspect : public ZBackupBase

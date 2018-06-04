@@ -449,6 +449,31 @@ ZCollector::ZCollector( string const & storageDir, string const & password,
 
 void ZCollector::gc( bool gcDeep )
 {
+
+  BundleCollector* collector = test(gcDeep);
+
+  collector->commit();
+
+  verbosePrintf( "Cleaning up...\n" );
+
+  string bundlesPath = getBundlesPath();
+  Dir::Listing bundleLst( bundlesPath );
+  Dir::Entry entry;
+  while( bundleLst.getNext( entry ) )
+  {
+    const string dirPath = Dir::addPath( bundlesPath, entry.getFileName());
+    if ( entry.isDir() && Dir::isDirEmpty( dirPath ) )
+    {
+      Dir::remove( dirPath );
+    }
+  }
+
+  verbosePrintf( "Garbage collection complete\n" );
+}
+
+
+BundleCollector* ZCollector::test( bool gcDeep )
+{
   ChunkIndex chunkReindex( encryptionkey, tmpMgr, getIndexPath(), true );
 
   ChunkStorage::Writer chunkStorageWriter( config, encryptionkey, tmpMgr,
@@ -456,7 +481,7 @@ void ZCollector::gc( bool gcDeep )
 
   string fileName;
 
-  BundleCollector collector( getBundlesPath(), &chunkStorageReader, &chunkStorageWriter,
+  BundleCollector* collector = new BundleCollector( getBundlesPath(), &chunkStorageReader, &chunkStorageWriter,
       gcDeep, config );
 
   verbosePrintf( "Performing garbage collection...\n" );
@@ -476,32 +501,17 @@ void ZCollector::gc( bool gcDeep )
 
     string backupData;
 
-    BackupRestorer::restoreIterations( chunkStorageReader, backupInfo, backupData, &collector.usedChunkSet );
+    BackupRestorer::restoreIterations( chunkStorageReader, backupInfo, backupData, &collector->usedChunkSet );
 
-    BackupRestorer::restore( chunkStorageReader, backupData, NULL, &collector.usedChunkSet, NULL, NULL );
+    BackupRestorer::restore( chunkStorageReader, backupData, NULL, &collector->usedChunkSet, NULL, NULL );
   }
 
   verbosePrintf( "Checking bundles...\n" );
 
-  chunkIndex.loadIndex( collector );
+  chunkIndex.loadIndex( *collector );
+  
+  return collector;
 
-  collector.commit();
-
-  verbosePrintf( "Cleaning up...\n" );
-
-  string bundlesPath = getBundlesPath();
-  Dir::Listing bundleLst( bundlesPath );
-  Dir::Entry entry;
-  while( bundleLst.getNext( entry ) )
-  {
-    const string dirPath = Dir::addPath( bundlesPath, entry.getFileName());
-    if ( entry.isDir() && Dir::isDirEmpty( dirPath ) )
-    {
-      Dir::remove( dirPath );
-    }
-  }
-
-  verbosePrintf( "Garbage collection complete\n" );
 }
 
 ZInspect::ZInspect( string const & storageDir, string const & password,
