@@ -1,12 +1,14 @@
 // Copyright (c) 2012-2014 Konstantin Isakov <ikm@zbackup.org> and ZBackup contributors, see CONTRIBUTORS
 // Part of ZBackup. Licensed under GNU GPLv2 or later + OpenSSL, see LICENSE
 
+#include <iostream>
 #include "zutils.hh"
 #include "debug.hh"
 #include "version.hh"
 #include "utils.hh"
 
-DEF_EX( exSpecifyTwoKeys, "Specify password flag (--non-encrypted or --password-file)"
+
+DEF_EX( exSpecifyTwoKeys, "Specify password flag (--non-encrypted or --password-file or --password-interactive)"
   " for import/export/passwd operation twice (first for source and second for destination)", std::exception )
 DEF_EX( exNonEncryptedWithKey, "--non-encrypted and --password-file are incompatible", std::exception )
 DEF_EX( exSpecifyEncryptionOptions, "Specify either --password-file or --non-encrypted", std::exception )
@@ -28,6 +30,25 @@ int main( int argc, char *argv[] )
       string option;
       Config::OptionType optionType = Config::Runtime;
 
+
+      if ( strcmp( argv[ x ], "--password-interactive" ) == 0 )
+      {
+
+        string pass;
+
+        fprintf(stdout, "\nPassword: ");
+
+	std::getline(std::cin, pass);
+
+          if ( !pass.empty() &&
+               pass[ pass.size() - 1 ] == '\n' )
+            pass.resize( pass.size() - 1 );
+          passwords.push_back( pass );
+
+        fprintf(stdout, "\n");
+
+      }
+      else
       if ( strcmp( argv[ x ], "--password-file" ) == 0 && x + 1 < argc )
       {
         // Read the password
@@ -153,7 +174,7 @@ invalid_option:
 
 "Usage: %s [flags] <command [action]> [command args]\n"
 "\n"
-"  Flags: --non-encrypted|--password-file <file>\n"
+"  Flags: --non-encrypted|--password-file <file>|--password-interactive\n"
 "          password flag should be specified twice if\n"
 "          import/export/passwd command specified\n"
 "         --silent (default is verbose)\n"
