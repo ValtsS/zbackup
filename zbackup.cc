@@ -2,6 +2,8 @@
 // Part of ZBackup. Licensed under GNU GPLv2 or later + OpenSSL, see LICENSE
 
 #include <iostream>
+#include <termios.h>
+#include <unistd.h>
 #include "zutils.hh"
 #include "debug.hh"
 #include "version.hh"
@@ -13,6 +15,17 @@ DEF_EX( exSpecifyTwoKeys, "Specify password flag (--non-encrypted or --password-
 DEF_EX( exNonEncryptedWithKey, "--non-encrypted and --password-file are incompatible", std::exception )
 DEF_EX( exSpecifyEncryptionOptions, "Specify either --password-file or --non-encrypted", std::exception )
 DEF_EX( exSourceInaccessible, "Backup source file/directory is inaccessible", std::exception )
+
+
+void echo( bool on = true )
+  {
+  struct termios settings;
+  tcgetattr( STDIN_FILENO, &settings );
+  settings.c_lflag = on
+                   ? (settings.c_lflag |   ECHO )
+                   : (settings.c_lflag & ~(ECHO));
+  tcsetattr( STDIN_FILENO, TCSANOW, &settings );
+  }
 
 int main( int argc, char *argv[] )
 {
@@ -37,9 +50,9 @@ int main( int argc, char *argv[] )
         string pass;
 
         fprintf(stdout, "\nPassword: ");
-
+	echo(false);
 	std::getline(std::cin, pass);
-
+        echo(true);
           if ( !pass.empty() &&
                pass[ pass.size() - 1 ] == '\n' )
             pass.resize( pass.size() - 1 );
